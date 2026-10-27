@@ -17,7 +17,8 @@
     "synth": "tsx scripts/generate-synthetic.ts",
     "baseline:sheet": "tsx scripts/baseline-sheet.ts",
     "import:gleif": "tsx scripts/import-gleif.ts",
-    "import:sdn": "tsx scripts/import-sdn.ts"
+    "import:sdn": "tsx scripts/import-sdn.ts",
+    "rules:catalogue": "tsx scripts/rule-catalogue.ts"
   },
   "dependencies": {
     "@fontsource/atkinson-hyperlegible-mono": "^5.3.0",

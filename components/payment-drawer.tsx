@@ -1,7 +1,13 @@
 import Link from "next/link";
 import { CloseOnEscape } from "@/components/close-on-escape";
 import { XmlView } from "@/components/xml-view";
+import { BucketBadge } from "@/components/bucket-badge";
+import { getDb } from "@/lib/db/client";
+import { findingsFor } from "@/lib/data/checks";
 import { getPayment } from "@/lib/data/payments";
+import { linesForPaths } from "@/lib/iso/highlight";
+import { REJECT_EXPLANATION } from "@/lib/rules/engine";
+import { ACTION_LABEL, BUCKETS, type Bucket } from "@/lib/reference/buckets";
 import { formatAmount, MSG_LABEL, relativeCutoff, STATUS_LABEL, STATUS_TONE } from "@/lib/format";
 import { REASON_CODES } from "@/lib/reference/codes";
 import type { ParsedTransfer } from "@/lib/iso/parse";
@@ -9,7 +15,7 @@ import type { ParsedTransfer } from "@/lib/iso/parse";
 const REASON = Object.fromEntries(REASON_CODES.map((c) => [c.code, c]));
 
 export async function PaymentDrawer({ id, closeHref }: { id: string; closeHref: string }) {
-  const row = await getPayment(id);
+  const [row, findings] = await Promise.all([getPayment(id), findingsFor(getDb(), id)]);
   const now = new Date();
 
   return (
@@ -23,17 +29,27 @@ export async function PaymentDrawer({ id, closeHref }: { id: string; closeHref: 
             <p className="mt-1 text-sm text-muted">The demo data may have been reset. Close this panel and pick a payment from the list.</p>
           </div>
         ) : (
-          <DrawerBody row={row} now={now} closeHref={closeHref} />
+          <DrawerBody row={row} findings={findings} now={now} closeHref={closeHref} />
         )}
       </aside>
     </div>
   );
 }
 
-function DrawerBody({ row, now, closeHref }: { row: NonNullable<Awaited<ReturnType<typeof getPayment>>>; now: Date; closeHref: string }) {
+type Findings = Awaited<ReturnType<typeof findingsFor>>;
+
+function DrawerBody({ row, findings, now, closeHref }: {
+  row: NonNullable<Awaited<ReturnType<typeof getPayment>>>;
+  findings: Findings;
+  now: Date;
+  closeHref: string;
+}) {
   const p = row.payment;
   const parsed = p.parsed as ParsedTransfer;
   const reason = p.rejectReasonCode ? REASON[p.rejectReasonCode] : undefined;
+  const plain = p.rejectReasonCode ? REJECT_EXPLANATION[p.rejectReasonCode]?.text : undefined;
+  const highlight = linesForPaths(p.rawXml, findings.map((f) => f.xpath ?? ""));
+  const checked = p.status !== "new";
 
   return (
     <>
@@ -55,9 +71,11 @@ function DrawerBody({ row, now, closeHref }: { row: NonNullable<Awaited<ReturnTy
             <h3 className="font-semibold text-rejected">
               Rejected by receiving bank: <span className="font-mono">{reason.code}</span> {reason.name}
             </h3>
-            <p className="mt-1 text-sm">{reason.definition}</p>
+            <p className="mt-1 text-sm">{plain ?? reason.definition}</p>
           </section>
         )}
+
+        <Findings findings={findings} checked={checked} repair={p.mode === "repair"} />
 
         <dl className="grid grid-cols-2 gap-x-6 gap-y-3 text-sm sm:grid-cols-3">
           <Field label="Status"><span className={STATUS_TONE[p.status]}>{STATUS_LABEL[p.status] ?? p.status}</span></Field>
@@ -71,13 +89,10 @@ function DrawerBody({ row, now, closeHref }: { row: NonNullable<Awaited<ReturnTy
           <Field label="Batch"><span className="font-mono text-xs">{p.batchId}</span></Field>
         </dl>
 
-        <p className="rounded-md bg-accent-soft px-3 py-2 text-sm">
-          Checks run from Sprint 2. Until then this panel shows the raw message so you can read it as an analyst would.
-        </p>
-
         <section>
           <h3 className="mb-2 font-semibold">Payment message</h3>
-          <XmlView xml={p.rawXml} />
+          {highlight.length > 0 && <p className="mb-2 text-xs text-muted">Highlighted lines are where the problems are.</p>}
+          <XmlView xml={p.rawXml} highlightLines={highlight} />
         </section>
 
         {p.rejectXml && (
@@ -97,5 +112,41 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <dt className="text-xs text-muted">{label}</dt>
       <dd className="mt-0.5">{children}</dd>
     </div>
+  );
+}
+
+function Findings({ findings, checked, repair }: { findings: Findings; checked: boolean; repair: boolean }) {
+  if (!checked && !repair) {
+    return <p className="rounded-md bg-accent-soft px-3 py-2 text-sm">Not checked yet. Run the pre-send checks from the Queue page.</p>;
+  }
+  if (findings.length === 0) {
+    return (
+      <p className="rounded-md border-l-4 border-clean bg-paper px-4 py-3 text-sm">
+        {repair
+          ? "Nothing in the message itself explains this rejection, so the problem sits with the receiving bank (for example, a closed account). Contact the client."
+          : "Passed every pre-send check. Ready to send."}
+      </p>
+    );
+  }
+  return (
+    <section>
+      <h3 className="mb-2 font-semibold">
+        {findings.length === 1 ? "1 problem found" : `${findings.length} problems found`}
+        {repair ? " in the original message" : " before sending"}
+      </h3>
+      <ul className="flex flex-col gap-2">
+        {findings.map((f) => (
+          <li key={f.id} className="rounded-lg border border-rule px-4 py-3">
+            <div className="flex flex-wrap items-center gap-2 text-xs">
+              <BucketBadge bucket={f.bucket} />
+              {f.reasonCode && <span className="font-mono text-muted">{f.reasonCode}</span>}
+              <span className="font-mono text-muted">{f.xpath}</span>
+            </div>
+            <p className="mt-1.5 text-sm">{f.message}</p>
+            <p className="mt-1 text-xs text-muted">Next step: {ACTION_LABEL[BUCKETS[f.bucket as Bucket].action]}</p>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }

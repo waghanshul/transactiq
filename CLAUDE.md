@@ -25,7 +25,9 @@ Vercel Hobby. Fonts are self-hosted from @fontsource (no Google Fonts at runtime
 - `lib/reference/`: buckets (failure taxonomy), ISO code sets, corridors, synthetic banks, watchlist.
 - `lib/synth/`: deterministic synthetic data generator and answer key.
 - `lib/db/`: Drizzle schema and client. `lib/seed/`: seed/reset. `lib/data/`: page queries.
-- `lib/rules/` (Sprint 2): one rule per file, pure functions, each with a vitest fixture.
+- `lib/rules/`: one file per failure bucket, one pure function per rule, each with a vitest
+  fixture. `engine.ts` runs them; `evaluate.ts` scores against the answer key.
+  `npm run rules:catalogue` regenerates `docs/rule-catalogue.md` after changing a rule.
 - `lib/suggest/` (Sprint 3): every suggestion returns {fieldPath, newValue, source, confidence, reason}.
 - API routes stay thin; logic lives in `lib/`.
 
@@ -45,7 +47,7 @@ Vercel Hobby. Fonts are self-hosted from @fontsource (no Google Fonts at runtime
 ## Commands
 `npm run dev` · `npm test` · `npm run lint` · `npm run typecheck` · `npm run build`
 `npm run db:generate` (after schema changes) · `npm run db:migrate` · `npm run seed`
-`npm run synth` (write sample XML to data/synthetic/) · `npm run baseline:sheet`
+`npm run synth` (write sample XML to data/synthetic/) · `npm run baseline:sheet` · `npm run rules:catalogue`
 
 ## Definition of done
 Tests, lint and typecheck pass; preview deploy works; the task's "done when" is met;

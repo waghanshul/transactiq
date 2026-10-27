@@ -17,7 +17,7 @@ first-attempt failure at roughly 1 in 10 cross-border payments, mostly from bad 
 rather than bad systems. TransactIQ targets the exceptions that remain after ISO 20022
 migration.
 
-## What's built (Sprint 1 of 4)
+## What's built (Sprints 1 and 2 of 4)
 
 - **340 synthetic messages**: 300 outgoing (pain.001 client instructions and pacs.008
   bank transfers) to check before sending, and 40 sent payments rejected with a pacs.002.
@@ -28,8 +28,16 @@ migration.
   payment to read its XML and, for rejects, the pacs.002 and reason code.
 - **One-command reset**: `npm run seed` or `POST /api/reset` restores the exact demo state.
 
-Coming next: Prevent-mode rules (Sprint 2), suggestions and maker-checker repair
-(Sprint 3), insights, metrics and the demo (Sprint 4).
+- **22 pre-send rules** across the nine buckets, each citing its CBPR+ or ISO source
+  ([rule catalogue](docs/rule-catalogue.md)). On the seeded data they catch 93 of 93
+  errors with no false positives, hold 5 duplicates and route 3 name matches to compliance.
+- **Queue**: run the checks in one click, then work through what needs a person, soonest
+  cut-off first, filtered by problem type. Each payment shows the problem in plain words
+  with the faulty XML lines highlighted. Every pacs.002 reject gets its reason explained.
+- **Metrics v1**: the checks scored against the answer key, by bucket and by rule.
+
+Coming next: suggested fixes and maker-checker repair (Sprint 3), insights on repeat
+errors and the demo script (Sprint 4).
 
 ## Run it locally
 

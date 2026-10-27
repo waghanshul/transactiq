@@ -53,3 +53,31 @@ numbers and references all day. No runtime call to Google Fonts.
 
 **Filters live in the URL.** The payments list is a plain GET form, so a filtered view
 can be shared or bookmarked and the back button works.
+
+## Sprint 2
+
+**One file per failure bucket, not one file per rule.** 22 rules in 9 files
+(`lib/rules/address.ts` etc.). Rules in a bucket share helpers and a source citation, and
+22 tiny files made the code harder to read. Each rule is still a separate pure function
+with its own id, title, source and a vitest fixture in `tests/rules.test.ts`.
+`docs/rule-catalogue.md` is generated from the rule metadata (`npm run rules:catalogue`).
+
+**XSD validation deferred.** The ISO 20022 schema files can't be downloaded from this
+build environment (iso20022.org is blocked). The format rules (charset, reference length,
+date, decimals) cover the seeded schema errors in bucket 6. XSD can be added later by
+dropping the .xsd files into `schemas/` and validating with libxmljs2 in a route.
+
+**Status flow after a check.** Outgoing payments move from `new` to one of `ready`
+(no findings), `flagged` (needs repair), `held` (possible duplicate; the earlier payment
+is released, the later one held) or `compliance` (any screening hit, which stops every
+other check so nobody "fixes" a payment under review). Re-running checks only touches
+those five statuses, so payments in the Sprint 3 repair workflow are never reset.
+
+**Rejects are explained from the reason code first, rules second.** A pacs.002 code like
+RR03 is ambiguous across buckets 1 and 2. If a rule finding on the rejected message
+carries the same code, its bucket wins; otherwise the code's default bucket is used. 3
+of 40 rejects (for example AC04, account closed) have nothing in the message that could
+have shown the problem; the queue says so and the metrics page counts them separately.
+
+**Metrics read the answer key only after the rules run.** `lib/data/metrics.ts` and
+`lib/rules/evaluate.ts` are the only readers, and both work on stored results.

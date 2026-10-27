@@ -2,19 +2,21 @@
 
 export const STATUS_LABEL: Record<string, string> = {
   new: "Not checked",
+  ready: "Passed checks",
   flagged: "Needs repair",
   in_repair: "In repair",
   pending_check: "Waiting for checker",
   approved: "Approved",
   released_sim: "Released (simulated)",
   held: "Held",
-  compliance: "With compliance",
+  compliance: "Sent to compliance",
   rejected: "Rejected by receiving bank",
 };
 
 /** Tailwind text colour per status; colour always means something. */
 export const STATUS_TONE: Record<string, string> = {
   new: "text-muted",
+  ready: "text-clean",
   flagged: "text-review",
   in_repair: "text-review",
   pending_check: "text-review",
