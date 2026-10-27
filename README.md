@@ -46,15 +46,19 @@ npm run dev                     # http://localhost:3000
 Other commands: `npm test`, `npm run lint`, `npm run typecheck`, `npm run synth`
 (writes sample XML and the answer key to `data/synthetic/`), `npm run baseline:sheet`.
 
-## Deploy (free)
+## Deploy (free, all in the browser)
 
-1. Push this repo to GitHub.
-2. In Vercel, import the repo (Hobby plan). Leave build settings as detected.
-3. In the Vercel project, open **Storage** and add **Neon** from the Marketplace. This
+No local Node install is needed.
+
+1. In Vercel, choose **Add New > Project** and import this GitHub repo (Hobby plan).
+   Leave build settings as detected.
+2. In the Vercel project, open **Storage** and connect **Neon** from the Marketplace. This
    sets `DATABASE_URL` for Production and Preview.
-4. Add `RESET_SECRET` under **Settings > Environment Variables**, then redeploy.
-5. From your laptop, point `.env.local` at the same Neon database and run
-   `npm run db:migrate && npm run seed` once.
+3. Under **Settings > Environment Variables**, add `RESET_SECRET` (any long random string).
+4. Redeploy (**Deployments > ... > Redeploy**) so the new variables take effect.
+5. Open `https://<your-app>.vercel.app/setup`, enter the reset secret and click
+   **Set up demo data**. This creates the tables and loads the synthetic dataset. Run it
+   again any time to reset the demo.
 6. Optional: add repository secrets `APP_URL` and `RESET_SECRET` to enable the nightly
    reset workflow.
 

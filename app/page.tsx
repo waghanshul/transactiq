@@ -42,14 +42,24 @@ async function Today() {
   } catch {
     return (
       <p className="rounded-md border border-rule bg-surface px-4 py-3 text-sm">
-        The database isn’t connected. Set <code className="font-mono">DATABASE_URL</code>, then run{" "}
-        <code className="font-mono">npm run db:migrate</code> and <code className="font-mono">npm run seed</code>.
+        The demo data isn’t loaded yet.{" "}
+        <Link href="/setup" className="font-semibold text-accent underline-offset-4 hover:underline">Set up the demo</Link>{" "}
+        to create the tables and load the synthetic payments.
       </p>
     );
   }
   const total = (mode: string) => data.byMode.filter((r) => r.mode === mode).reduce((s, r) => s + r.n, 0);
   const prevent = total("prevent");
   const repair = total("repair");
+  if (prevent + repair === 0) {
+    return (
+      <p className="rounded-md border border-rule bg-surface px-4 py-3 text-sm">
+        No payments loaded.{" "}
+        <Link href="/setup" className="font-semibold text-accent underline-offset-4 hover:underline">Set up the demo</Link>{" "}
+        to load the synthetic dataset.
+      </p>
+    );
+  }
 
   return (
     <section className="grid gap-4 sm:grid-cols-2">

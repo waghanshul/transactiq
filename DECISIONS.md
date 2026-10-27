@@ -4,6 +4,11 @@ Short notes on non-obvious choices. Newest first.
 
 ## Sprint 1
 
+**Browser setup page instead of a terminal.** `/setup` runs the SQL migrations and the seed
+from a server action, guarded by `RESET_SECRET` with a timing-safe compare. The project can
+be deployed and loaded without installing Node locally. The migration files ship with that
+route via `outputFileTracingIncludes`.
+
 **TypeScript generator instead of Faker.** Supplier names, streets and towns come from
 hand-curated lists in `lib/synth/`. Every value stays inside the CBPR+ Latin character
 set and the dataset is byte-identical on every seed, which the tests check.
