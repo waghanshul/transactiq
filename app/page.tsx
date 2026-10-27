@@ -11,7 +11,7 @@ export default function Home() {
           Catch broken cross-border payments before they leave the bank.
         </h1>
         <p className="mt-3 text-base text-muted">
-          From 14 November 2026, Swift rejects payments whose addresses are free text. Repair Desk checks ISO 20022
+          From 14 November 2026, Swift rejects payments whose addresses are free text. TransactIQ checks ISO 20022
           messages before sending, explains each problem in plain words, suggests a fix, and sends every change
           through maker-checker approval.
         </p>

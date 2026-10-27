@@ -1,4 +1,4 @@
-# Repair Desk: payment repair POC
+# TransactIQ: payment repair POC
 
 @AGENTS.md
 

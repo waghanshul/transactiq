@@ -1,6 +1,6 @@
-# Repair Desk: ISO 20022 payment repair POC
+# TransactIQ: ISO 20022 payment repair POC
 
-Repair Desk catches cross-border payment errors before a payment leaves the bank, explains
+TransactIQ catches cross-border payment errors before a payment leaves the bank, explains
 each one in plain words, suggests a fix, and sends every change through maker-checker
 approval. It is a proof of concept built on free tiers (Next.js on Vercel, Neon Postgres).
 
@@ -14,7 +14,7 @@ approval. It is a proof of concept built on free tiers (Next.js on Vercel, Neon 
 From 14 November 2026, Swift CBPR+ rejects payments whose postal addresses are fully
 unstructured. Town and country must sit in their own fields. Industry studies put
 first-attempt failure at roughly 1 in 10 cross-border payments, mostly from bad data
-rather than bad systems. Repair Desk targets the exceptions that remain after ISO 20022
+rather than bad systems. TransactIQ targets the exceptions that remain after ISO 20022
 migration.
 
 ## What's built (Sprint 1 of 4)

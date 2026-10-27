@@ -9,7 +9,7 @@ import "./globals.css";
 import { CutoffClock } from "@/components/cutoff-clock";
 
 export const metadata: Metadata = {
-  title: "Repair Desk – payment repair POC",
+  title: "TransactIQ – payment repair POC",
   description: "Catches ISO 20022 payment errors before sending, suggests fixes, and runs maker-checker repair. Synthetic data only.",
 };
 
@@ -30,7 +30,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
         <header className="border-b border-rule bg-surface">
           <div className="mx-auto flex max-w-7xl flex-wrap items-center gap-x-8 gap-y-3 px-4 py-3 sm:px-6">
             <Link href="/" className="text-lg font-bold tracking-tight">
-              Repair Desk
+              TransactIQ
             </Link>
             <nav aria-label="Main" className="flex gap-5 text-sm">
               {NAV.map((item) =>
