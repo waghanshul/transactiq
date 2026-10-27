@@ -2,7 +2,11 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { BucketBadge } from "@/components/bucket-badge";
-import { currentMetrics } from "@/lib/data/metrics";
+import { geminiScore, rulesScore } from "@/lib/data/benchmark";
+import { currentMetrics, repairMetrics } from "@/lib/data/metrics";
+import { getDb } from "@/lib/db/client";
+import { suggestConfig } from "@/lib/suggest/config";
+import { RunGeminiButton } from "./run-gemini-button";
 import { BUCKETS, type Bucket } from "@/lib/reference/buckets";
 import { RULES } from "@/lib/rules/engine";
 
@@ -102,9 +106,9 @@ async function Scores() {
         </ul>
       </section>
 
-      <p className="text-sm text-muted">
-        Time saved and first-time-right rate arrive with the repair workflow in Sprint 3; they need real approvals to measure.
-      </p>
+      <Suspense fallback={<p className="text-sm text-muted">Scoring the suggestions…</p>}>
+        <SuggestionScores />
+      </Suspense>
     </>
   );
 }
@@ -116,5 +120,89 @@ function Score({ value, label, detail }: { value: string; label: string; detail:
       <span className="mt-1 block text-sm font-semibold">{label}</span>
       <span className="block text-xs text-muted">{detail}</span>
     </div>
+  );
+}
+
+async function SuggestionScores() {
+  const m = await repairMetrics();
+  const s = m.score;
+  const rules = rulesScore();
+  const gemini = await geminiScore(getDb());
+  const threshold = Math.round(m.threshold * 100);
+  return (
+    <>
+      <section className="border-t border-rule pt-6">
+        <h2 className="text-lg font-bold">Suggested fixes</h2>
+        <p className="mt-1 max-w-2xl text-sm text-muted">
+          Only suggestions at or above {threshold}% confidence are shown to the analyst; below that the panel offers options
+          or a blank field. Accuracy is measured on the suggestions actually shown.
+        </p>
+        <div className="mt-3 grid gap-3 sm:grid-cols-4">
+          <Score value={pct(s.address.right, s.address.shown)} label="Address suggestions right" detail={`${s.address.right} of ${s.address.shown} shown (town and country). Target 95%.`} />
+          <Score value={pct(s.other.right, s.other.shown)} label="Other suggestions right" detail={`${s.other.right} of ${s.other.shown}: BICs, purpose codes, names, dates, references`} />
+          <Score value={pct(s.coverage.withSuggestion, s.coverage.fixable)} label="Fixable errors with a suggestion" detail={`${s.coverage.withSuggestion} of ${s.coverage.fixable}. Accounts and amounts never get one.`} />
+          <Score value={String(m.repairs.approved)} label="Repairs approved" detail={`${m.repairs.firstTimeRight} first time right, ${m.repairs.sentBack} sent back, ${m.repairs.open} open`} />
+        </div>
+        {(m.changes.accepted + m.changes.edited + m.changes.manual) > 0 && (
+          <p className="mt-3 text-sm text-muted">
+            In repairs so far: {m.changes.accepted} suggestions accepted as shown, {m.changes.edited} edited, {m.changes.manual} values typed by hand.
+          </p>
+        )}
+        {s.wrong.length > 0 && <p className="mt-2 text-sm text-rejected">Wrong: {s.wrong.map((w) => `${w.paymentId} (${w.got}, expected ${w.want})`).join("; ")}</p>}
+      </section>
+
+      <section>
+        <h2 className="text-lg font-bold">Address engine on 150 test addresses</h2>
+        <p className="mt-1 max-w-2xl text-sm text-muted">
+          A separate, messier set: old town names, typos, capitals, one-line addresses, missing countries, Japanese block
+          addresses with no town, and 10 real towns that aren&rsquo;t in the reference list. No bank record is available, so the
+          engine works from the text alone.
+        </p>
+        <table className="mt-3 w-full max-w-3xl text-sm">
+          <thead>
+            <tr className="border-b border-rule text-left text-muted">
+              <th className="py-2 font-semibold">Engine</th>
+              <th className="py-2 text-right font-semibold">Shown</th>
+              <th className="py-2 text-right font-semibold">Right when shown</th>
+              <th className="py-2 text-right font-semibold">Said &ldquo;not sure&rdquo;</th>
+            </tr>
+          </thead>
+          <tbody>
+            {[rules, gemini].map((e) => (
+              <tr key={e.engine} className="border-b border-rule">
+                <td className="py-2">{e.engine}</td>
+                {e.ran ? (
+                  <>
+                    <td className="py-2 text-right tabular-nums">{e.shown} of {e.total}</td>
+                    <td className="py-2 text-right tabular-nums">{pct(e.shownRight, e.shown)}</td>
+                    <td className="py-2 text-right tabular-nums">{e.unsure}</td>
+                  </>
+                ) : (
+                  <td className="py-2 text-right text-muted" colSpan={3}>{e.note}</td>
+                )}
+              </tr>
+            ))}
+            <tr className="border-b border-rule text-muted">
+              <td className="py-2">Swift address model, open-source structured-address tools</td>
+              <td className="py-2 text-right" colSpan={3}>Not run in this POC (see DECISIONS.md)</td>
+            </tr>
+          </tbody>
+        </table>
+        <details className="mt-2 max-w-3xl text-sm">
+          <summary className="cursor-pointer text-muted">Rules-only results by address style</summary>
+          <ul className="mt-2 grid gap-x-6 sm:grid-cols-2">
+            {rules.byStyle.map((b) => (
+              <li key={b.style} className="flex justify-between border-b border-rule py-1">
+                <span>{b.style}</span>
+                <span className="tabular-nums">{b.right}/{b.total} right, {b.total - b.shown} unsure</span>
+              </li>
+            ))}
+          </ul>
+        </details>
+        {suggestConfig.geminiEnabled && (
+          <div className="mt-3"><RunGeminiButton label={gemini.ran ? "Run Gemini again" : `Ask Gemini about the ${rules.unsure} unsure addresses`} /></div>
+        )}
+      </section>
+    </>
   );
 }

@@ -81,3 +81,74 @@ have shown the problem; the queue says so and the metrics page counts them separ
 
 **Metrics read the answer key only after the rules run.** `lib/data/metrics.ts` and
 `lib/rules/evaluate.ts` are the only readers, and both work on stored results.
+
+## Sprint 3
+
+**Demo sign-in instead of Neon Auth (S3-09).** Four fictitious users (two makers, a
+checker, a viewer) sign in with one click, so a presenter can play both sides of
+maker-checker in seconds during a demo. The session is an HMAC-signed, http-only
+cookie (AUTH_SECRET, or RESET_SECRET as a fallback). The role always comes from the
+`user_roles` table and every server action checks it again, so the security model is
+the same as with a real identity provider: swapping in Neon Auth only changes how
+`currentUser()` gets the user id. Neon Auth also needs console setup the user would
+have to do by hand, and can't be tested from the build environment.
+
+**Maker-checker is enforced in `lib/repair/workflow.ts`, not the UI.** A checker is
+refused if they are the submitting maker or edited the repair at any point
+(`diff.editors`). Sending back needs a comment. Approval re-runs every rule before the
+payment changes. Covered by `tests/workflow.test.ts` against a real Postgres (skipped
+in CI, which has no database).
+
+**Suggestions are computed in the batch check, without network calls.** All 101
+suggestions take well under a second and are stored with the findings. The
+OpenStreetMap check and the Gemini fallback run only when a repair is opened, once per
+suggestion, and the result is stored (`enhanced`) and cached in `api_cache`.
+
+**The address engine reads the text first; bank records only confirm.** v1 finds town
+and country from the free text (gazetteer, postcode shapes, Japanese wards and postcode
+ranges, India PIN prefixes, country names and aliases). The client or beneficiary
+record on file then raises confidence when it agrees and lowers it when it doesn't. A
+town inferred only from a postcode stays below the display threshold (Thane shares PIN
+prefix 400 with Mumbai), so the analyst sees options, not a confident wrong answer.
+
+**Town list is a curated GeoNames subset.** GeoNames downloads are blocked from the
+build environment, so `lib/reference/towns.ts` holds ~70 towns in the corridor
+countries, plus historic names (Bombay, Madras, Munich). Swap in cities15000 for
+production.
+
+**150-address test set (S3-02).** `lib/synth/address-testset.ts` is deliberately
+messier than the seeded payments: old names, typos, capitals, one-line, missing
+country, Japanese block addresses and 10 real towns not in the list. Rules only: 126
+shown, all right; 24 "not sure", which is where Gemini is asked. It is still synthetic,
+so the number says the engine behaves as designed, not that it would score the same on
+a bank's real addresses.
+
+**Gemini sees only free-text address lines.** No names, accounts, amounts or
+references. A 429 or any other failure shows "Suggestion unavailable" and the page
+carries on. An LLM answer alone is capped at 80% confidence; 90% only when it agrees
+with the rules. Model is `gemini-flash-latest` (GEMINI_MODEL to change).
+
+**No migration for Sprint 3.** The `suggestions` table keeps the contract fields in
+columns; options, cross-check notes and resolved rules ride inside the `new_value`
+JSON. The deployed database needs no re-setup.
+
+**XML is edited in place, not rebuilt.** `lib/iso/edit.ts` replaces only the changed
+element's lines, so the diff shows exactly the repair and nothing else moves.
+
+**End-to-end references are matched to the client's own format.** Cutting a long
+reference to 35 characters can leave a value the client never issued. The suggestion
+picks the longest prefix with the same shape as the client's other references
+(`AAAA-AAA-999999`); without a match, it falls below the threshold.
+
+**ADDR-HYBRID-DUPLICATE tightened.** It now flags only a line part that is just the
+town (with or without a postcode). Street names that contain the town ("Dubai Silicon
+Oasis", "Mumbai-Pune Highway") are legitimate and were blocking valid repairs.
+
+**Benchmark against Swift's address model and other open-source tools (S3-16) is not
+run.** They need Python packages and downloads that the build environment can't
+reach. The Metrics table keeps a row for them so the comparison stays honest about
+what was and wasn't measured.
+
+**Held duplicates and amount/currency problems have no repair path.** The tool says
+what to do (confirm with the client, route to the desk) but never releases, cancels or
+edits them.

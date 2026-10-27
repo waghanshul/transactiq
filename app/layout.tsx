@@ -7,6 +7,7 @@ import "@fontsource/atkinson-hyperlegible-next/700.css";
 import "@fontsource/atkinson-hyperlegible-mono/400.css";
 import "./globals.css";
 import { CutoffClock } from "@/components/cutoff-clock";
+import { UserBadge } from "@/components/user-badge";
 
 export const metadata: Metadata = {
   title: "TransactIQ – payment repair POC",
@@ -45,9 +46,12 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
                 ),
               )}
             </nav>
-            <div className="ml-auto">
+            <div className="ml-auto flex flex-wrap items-center gap-x-6 gap-y-2">
               <Suspense fallback={<span className="text-sm text-muted">Loading cut-offs…</span>}>
                 <CutoffClock />
+              </Suspense>
+              <Suspense fallback={null}>
+                <UserBadge />
               </Suspense>
             </div>
           </div>

@@ -2,7 +2,6 @@ import Link from "next/link";
 import { connection } from "next/server";
 import { Suspense } from "react";
 import { BucketBadge } from "@/components/bucket-badge";
-import { PaymentDrawer } from "@/components/payment-drawer";
 import { queueItems, statusCounts, type QueueTab } from "@/lib/data/queue";
 import { formatAmount, relativeCutoff, STATUS_LABEL, STATUS_TONE } from "@/lib/format";
 import { BUCKETS, type Bucket } from "@/lib/reference/buckets";
@@ -12,11 +11,10 @@ type Search = Promise<Record<string, string | string[] | undefined>>;
 
 const one = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v) || undefined;
 
-function href(params: { tab: QueueTab; bucket?: string; view?: string }) {
+function href(params: { tab: QueueTab; bucket?: string }) {
   const q = new URLSearchParams();
   q.set("tab", params.tab);
   if (params.bucket) q.set("bucket", params.bucket);
-  if (params.view) q.set("view", params.view);
   return `/queue?${q.toString()}`;
 }
 
@@ -39,14 +37,15 @@ export default function QueuePage({ searchParams }: { searchParams: Search }) {
 
 async function QueueView({ searchParams }: { searchParams: Search }) {
   const raw = await searchParams;
-  const tab: QueueTab = one(raw.tab) === "repair" ? "repair" : "prevent";
+  const tabParam = one(raw.tab);
+  const tab: QueueTab = tabParam === "repair" || tabParam === "approval" ? tabParam : "prevent";
   const bucket = one(raw.bucket);
-  const view = one(raw.view);
   await connection();
   const now = new Date();
 
   const [counts, allItems] = await Promise.all([statusCounts(), queueItems(tab)]);
   const n = (mode: string, status: string) => counts.find((c) => c.mode === mode && c.status === status)?.n ?? 0;
+  const all = (status: string) => counts.filter((c) => c.status === status).reduce((s, c) => s + c.n, 0);
   const notChecked = n("prevent", "new");
   const checked = counts.filter((c) => c.mode === "prevent" && c.status !== "new").reduce((s, c) => s + c.n, 0);
   const items = bucket ? allItems.filter((i) => i.buckets.includes(Number(bucket))) : allItems;
@@ -66,12 +65,13 @@ async function QueueView({ searchParams }: { searchParams: Search }) {
           <div className="mt-4"><RunChecksButton label="Run pre-send checks" /></div>
         </section>
       ) : (
-        <section aria-label="Results of the last check" className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+        <section aria-label="Results of the last check" className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-6">
           <Stat value={n("prevent", "ready")} label="Passed, ready to send" tone="text-clean" />
-          <Stat value={n("prevent", "flagged")} label="Need repair" tone="text-review" />
+          <Stat value={n("prevent", "flagged") + n("prevent", "in_repair")} label="Need repair before sending" tone="text-review" />
           <Stat value={n("prevent", "held")} label="Held as possible duplicates" tone="text-review" />
           <Stat value={n("prevent", "compliance")} label="Sent to compliance" tone="text-compliance" />
-          <Stat value={n("repair", "rejected")} label="Rejected after sending" tone="text-rejected" />
+          <Stat value={n("repair", "rejected") + n("repair", "in_repair")} label="Rejected after sending" tone="text-rejected" />
+          <Stat value={all("pending_check")} label={`Waiting for approval · ${all("approved")} approved`} tone="text-accent" />
         </section>
       )}
 
@@ -80,10 +80,13 @@ async function QueueView({ searchParams }: { searchParams: Search }) {
           <div className="flex flex-wrap items-end justify-between gap-3 border-b border-rule">
             <nav aria-label="Queue" className="flex gap-1">
               <TabLink active={tab === "prevent"} href={href({ tab: "prevent" })}>
-                Before sending <span className="text-muted">{n("prevent", "flagged") + n("prevent", "held") + n("prevent", "compliance")}</span>
+                Before sending <span className="text-muted">{n("prevent", "flagged") + n("prevent", "in_repair") + n("prevent", "held") + n("prevent", "compliance")}</span>
               </TabLink>
               <TabLink active={tab === "repair"} href={href({ tab: "repair" })}>
-                Rejected after sending <span className="text-muted">{n("repair", "rejected")}</span>
+                Rejected after sending <span className="text-muted">{n("repair", "rejected") + n("repair", "in_repair")}</span>
+              </TabLink>
+              <TabLink active={tab === "approval"} href={href({ tab: "approval" })}>
+                Waiting for approval <span className="text-muted">{all("pending_check")}</span>
               </TabLink>
             </nav>
             <div className="pb-2"><RunChecksButton label="Run checks again" /></div>
@@ -106,15 +109,14 @@ async function QueueView({ searchParams }: { searchParams: Search }) {
           </div>
 
           {items.length === 0 ? (
-            <p className="rounded-md border border-rule bg-surface px-4 py-3 text-sm">Nothing waiting here. Every payment in this view is clear.</p>
+            <p className="rounded-md border border-rule bg-surface px-4 py-3 text-sm">{tab === "approval" ? "No repairs are waiting for a checker." : "Nothing waiting here. Every payment in this view is clear."}</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {items.map((i) => (
                 <li key={i.id}>
                   <Link
-                    href={href({ tab, bucket, view: i.id })}
-                    scroll={false}
-                    className={`grid gap-x-4 gap-y-1 rounded-lg border bg-surface px-4 py-3 sm:grid-cols-[8rem_1fr_auto] ${view === i.id ? "border-accent" : "border-rule hover:border-accent"}`}
+                    href={`/repair/${i.id}`}
+                    className="grid gap-x-4 gap-y-1 rounded-lg border border-rule bg-surface px-4 py-3 hover:border-accent sm:grid-cols-[8rem_1fr_auto]"
                   >
                     <span>
                       <span className="block font-mono font-semibold text-accent">{i.id}</span>
@@ -143,8 +145,6 @@ async function QueueView({ searchParams }: { searchParams: Search }) {
           )}
         </>
       )}
-
-      {view && <PaymentDrawer id={view} closeHref={href({ tab, bucket })} />}
     </>
   );
 }

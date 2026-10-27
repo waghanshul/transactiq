@@ -60,9 +60,14 @@ function DrawerBody({ row, findings, now, closeHref }: {
             {MSG_LABEL[p.msgType]} ({p.msgType}) from {row.clientName}
           </p>
         </div>
-        <Link href={closeHref} scroll={false} className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold hover:border-accent">
-          Close
-        </Link>
+        <div className="flex gap-2">
+          <Link href={`/repair/${p.id}`} className="rounded-md bg-accent px-3 py-1.5 text-sm font-semibold text-surface">
+            {["flagged", "rejected", "in_repair", "pending_check"].includes(p.status) ? "Repair" : "Open"}
+          </Link>
+          <Link href={closeHref} scroll={false} className="rounded-md border border-rule px-3 py-1.5 text-sm font-semibold hover:border-accent">
+            Close
+          </Link>
+        </div>
       </div>
 
       <div className="flex flex-col gap-6 px-6 py-5">

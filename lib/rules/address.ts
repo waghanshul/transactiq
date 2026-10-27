@@ -4,7 +4,7 @@
 // in their own fields, at most two AdrLine of 70 characters, and nothing in an
 // AdrLine that already has a structured field.
 import { isCountryCode } from "@/lib/reference/countries";
-import { containsWord, hasStructuredParts, PARTY, party, type PartyRole } from "./helpers";
+import { hasStructuredParts, PARTY, party, type PartyRole } from "./helpers";
 import type { Finding, Rule } from "./types";
 
 const ROLES: PartyRole[] = ["debtor", "creditor"];
@@ -76,6 +76,19 @@ export const addressCountryCode: Rule = {
   },
 };
 
+/**
+ * True when a comma-separated part of the line is just the town, optionally
+ * with a postcode ("Pune", "70173 Stuttgart"). A street or district named after
+ * the town ("Dubai Silicon Oasis", "Mumbai-Pune Highway") is not a repeat.
+ */
+export function repeatsTown(line: string, town: string): boolean {
+  const t = town.trim().toLowerCase();
+  return line.split(",").some((segment) => {
+    const words = segment.trim().split(/\s+/).filter((w) => !/\d/.test(w));
+    return words.join(" ").toLowerCase() === t;
+  });
+}
+
 export const addressDuplicatedInLine: Rule = {
   id: "ADDR-HYBRID-DUPLICATE",
   bucket: 1,
@@ -87,7 +100,7 @@ export const addressDuplicatedInLine: Rule = {
     for (const role of ROLES) {
       const a = party(msg, role).address;
       if (!a?.AdrLine?.length || !a.TwnNm || !a.Ctry) continue;
-      const repeated = a.AdrLine.some((line) => containsWord(line, a.TwnNm!));
+      const repeated = a.AdrLine.some((line) => repeatsTown(line, a.TwnNm!));
       if (!repeated) continue;
       out.push({
         ruleId: "ADDR-HYBRID-DUPLICATE", bucket: 1, severity: "error",

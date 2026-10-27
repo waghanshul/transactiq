@@ -26,7 +26,7 @@ export default function Home() {
         <ol className="mt-3 flex flex-col gap-3 text-sm">
           <Step n={1} done title="Foundation">300 synthetic payments and 40 rejects, seeded with known errors and an answer key.</Step>
           <Step n={2} done title="Check before sending">22 deterministic CBPR+ rules find every seeded error and explain each reject. <Link href="/queue" className="font-semibold text-accent underline-offset-4 hover:underline">Open the queue</Link>.</Step>
-          <Step n={3} title="Repair with approval">Suggested fixes with confidence, maker-checker sign-off and a full audit trail.</Step>
+          <Step n={3} done title="Repair with approval">Suggested fixes with confidence and source, maker-checker sign-off enforced on the server, and a full audit trail. <Link href="/sign-in" className="font-semibold text-accent underline-offset-4 hover:underline">Sign in as a demo user</Link>.</Step>
           <Step n={4} title="Fix it at source">Insights on repeat errors, a drafted note to the client, and measured results.</Step>
         </ol>
       </section>

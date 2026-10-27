@@ -10,7 +10,8 @@ pacs.002. Built as a POC for a bank's payments operations team. SYNTHETIC DATA O
 ## Stack
 Next.js 16 App Router (Cache Components on) + TypeScript, Tailwind v4, Drizzle ORM +
 Neon Postgres (`@neondatabase/serverless` HTTP driver; node-postgres for local URLs),
-Neon Auth (Sprint 3), Vercel AI SDK + Gemini Flash (Sprint 3), vitest. Deployed on
+demo sign-in with roles (lib/auth.ts; Neon Auth deferred, see DECISIONS.md),
+Vercel AI SDK v7 + Gemini Flash (fallback only), OpenStreetMap Nominatim, vitest. Deployed on
 Vercel Hobby. Fonts are self-hosted from @fontsource (no Google Fonts at runtime).
 
 ## Next.js 16 gotchas (read before writing pages)
@@ -28,7 +29,12 @@ Vercel Hobby. Fonts are self-hosted from @fontsource (no Google Fonts at runtime
 - `lib/rules/`: one file per failure bucket, one pure function per rule, each with a vitest
   fixture. `engine.ts` runs them; `evaluate.ts` scores against the answer key.
   `npm run rules:catalogue` regenerates `docs/rule-catalogue.md` after changing a rule.
-- `lib/suggest/` (Sprint 3): every suggestion returns {fieldPath, newValue, source, confidence, reason}.
+- `lib/suggest/`: every suggestion returns {fieldPath, newValue, source, confidence, reason}.
+  `engine.ts` is pure (no DB, no network); `enhance.ts` adds the OpenStreetMap check and
+  the Gemini fallback when a repair is opened; `guardrails.ts` is checked again on every write.
+- `lib/repair/workflow.ts`: maker-checker state machine. Every function checks the role,
+  the status and the guardrails, and writes to `audit_log`. `lib/iso/edit.ts` edits XML in place.
+- `lib/auth.ts`: demo users and signed session cookie; the role comes from `user_roles`.
 - API routes stay thin; logic lives in `lib/`.
 
 ## Guardrails (never break these)

@@ -17,7 +17,7 @@ first-attempt failure at roughly 1 in 10 cross-border payments, mostly from bad 
 rather than bad systems. TransactIQ targets the exceptions that remain after ISO 20022
 migration.
 
-## What's built (Sprints 1 and 2 of 4)
+## What's built (Sprints 1 to 3 of 4)
 
 - **340 synthetic messages**: 300 outgoing (pain.001 client instructions and pacs.008
   bank transfers) to check before sending, and 40 sent payments rejected with a pacs.002.
@@ -36,8 +36,26 @@ migration.
   with the faulty XML lines highlighted. Every pacs.002 reject gets its reason explained.
 - **Metrics v1**: the checks scored against the answer key, by bucket and by rule.
 
-Coming next: suggested fixes and maker-checker repair (Sprint 3), insights on repeat
-errors and the demo script (Sprint 4).
+- **Suggested fixes**: one per broken field, with confidence, source and a plain reason.
+  Addresses are restructured from the free text (town, country, postcode in their own
+  fields), confirmed against the bank's record and OpenStreetMap; Gemini is asked only
+  when the rules are unsure. On the seeded data every shown suggestion is right (59/59
+  addresses, 42/42 other fields). Accounts and amounts never get a suggested value: the
+  tool drafts a message to the client instead.
+- **Maker-checker repair**: sign in as a demo maker, accept or edit a fix, see the XML
+  diff and a live re-check, submit; sign in as the checker and approve or send back.
+  Enforced on the server, with every step in the payment's audit trail.
+
+Coming next: insights on repeat errors, a drafted note to the client, and the demo
+script (Sprint 4).
+
+### Optional settings
+
+| Variable | What it does |
+| --- | --- |
+| `GEMINI_API_KEY` | Free key from Google AI Studio. Turns on the Gemini fallback for addresses the rules can't read. Without it, those show options instead. |
+| `SUGGESTION_MIN_CONFIDENCE` | Below this (default 0.7) the panel shows options or a blank field, never a guess. |
+| `AUTH_SECRET` | Signs demo sessions; falls back to `RESET_SECRET`. |
 
 ## Run it locally
 

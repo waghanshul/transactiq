@@ -7,7 +7,9 @@ import { checkBatch, type Outcome } from "@/lib/rules/engine";
 import { referenceFromRows } from "@/lib/rules/reference";
 import type { CheckablePayment } from "@/lib/rules/types";
 import type { DB } from "@/lib/db/client";
-import { auditLog, bicDirectory, corridorRules, payments, screeningNames, validationResults } from "@/lib/db/schema";
+import { auditLog, bicDirectory, corridorRules, payments, screeningNames, suggestions, validationResults } from "@/lib/db/schema";
+import { suggestForPayment } from "@/lib/suggest/engine";
+import { loadContextBuilder, toRow } from "./suggestions";
 
 /** Statuses the checker may overwrite. Later workflow states are never touched. */
 const RECHECKABLE = ["new", "ready", "flagged", "held", "compliance"];
@@ -18,6 +20,7 @@ export interface RunSummary {
   outcomes: Record<Outcome, number>;
   rejectedExplained: number;
   findings: number;
+  suggestions: number;
   ms: number;
 }
 
@@ -70,8 +73,26 @@ export async function runChecks(db: DB, actorId = "system"): Promise<RunSummary>
   for (let i = 0; i < ids.length; i += CHUNK) {
     await db.delete(validationResults).where(inArray(validationResults.paymentId, ids.slice(i, i + CHUNK)));
   }
+  const inserted: { id: number; paymentId: string; ruleId: string; xpath: string | null }[] = [];
   for (let i = 0; i < findingRows.length; i += CHUNK) {
-    await db.insert(validationResults).values(findingRows.slice(i, i + CHUNK));
+    inserted.push(...await db.insert(validationResults).values(findingRows.slice(i, i + CHUNK))
+      .returning({ id: validationResults.id, paymentId: validationResults.paymentId, ruleId: validationResults.ruleId, xpath: validationResults.xpath }));
+  }
+
+  // Suggestions (Sprint 3): rules only, no network calls in the batch run.
+  const ctxFor = await loadContextBuilder(db);
+  const statusAfter = (r: (typeof rows)[number]) =>
+    r.mode === "repair" ? r.status : preventResults.get(r.id)!.outcome === "compliance" ? "compliance" : "flagged";
+  const suggestionRows = [...prevent, ...repair].flatMap((r) => {
+    const mine = inserted.filter((f) => f.paymentId === r.id);
+    if (!mine.length) return [];
+    const ctx = ctxFor(r.id);
+    if (!ctx) return [];
+    const list = suggestForPayment(r.parsed as ParsedTransfer, mine.map((f) => ({ ruleId: f.ruleId, fieldPath: f.xpath ?? "" })), statusAfter(r), ctx);
+    return list.map((sg) => toRow(sg, mine.find((f) => sg.resolves.includes(f.ruleId))!.id));
+  });
+  for (let i = 0; i < suggestionRows.length; i += CHUNK) {
+    await db.insert(suggestions).values(suggestionRows.slice(i, i + CHUNK));
   }
 
   const outcomes: Record<Outcome, number> = { ready: 0, flagged: 0, held: 0, compliance: 0 };
@@ -92,6 +113,7 @@ export async function runChecks(db: DB, actorId = "system"): Promise<RunSummary>
     outcomes,
     rejectedExplained: repair.length,
     findings: findingRows.length,
+    suggestions: suggestionRows.length,
     ms: Date.now() - started,
   };
   await db.insert(auditLog).values({

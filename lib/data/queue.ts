@@ -4,11 +4,12 @@ import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { getDb } from "@/lib/db/client";
 import { clients, payments, validationResults } from "@/lib/db/schema";
 
-export type QueueTab = "prevent" | "repair";
+export type QueueTab = "prevent" | "repair" | "approval";
 
 const ATTENTION: Record<QueueTab, string[]> = {
-  prevent: ["flagged", "held", "compliance"],
-  repair: ["rejected"],
+  prevent: ["flagged", "in_repair", "held", "compliance"],
+  repair: ["rejected", "in_repair"],
+  approval: ["pending_check"],
 };
 
 export async function queueItems(tab: QueueTab, bucket?: number) {
@@ -28,7 +29,9 @@ export async function queueItems(tab: QueueTab, bucket?: number) {
     })
     .from(payments)
     .innerJoin(clients, eq(payments.clientId, clients.id))
-    .where(and(eq(payments.mode, tab), inArray(payments.status, ATTENTION[tab])))
+    .where(tab === "approval"
+      ? inArray(payments.status, ATTENTION.approval)
+      : and(eq(payments.mode, tab), inArray(payments.status, ATTENTION[tab])))
     .orderBy(asc(payments.cutoffAt), asc(payments.id));
 
   const findings = rows.length
