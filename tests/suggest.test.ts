@@ -54,13 +54,27 @@ describe("suggestions on the seeded payments", () => {
     expect(score.address.shown).toBeGreaterThan(30);
     expect(score.address.right / score.address.shown).toBeGreaterThanOrEqual(0.95);
     expect(score.other.right).toBe(score.other.shown);
-    expect(score.coverage.withSuggestion).toBe(score.coverage.fixable);
+    // Every fixable error gets a shown suggestion except the deliberate hard case.
+    expect(score.coverage.withSuggestion).toBe(score.coverage.fixable - 1);
+  });
+
+  it("the hard case (first-time beneficiary, ambiguous ward) shows options, not a guess", () => {
+    const hard = ds.payments.filter((p) => p.mode === "prevent" && p.beneficiaryId === null
+      && ds.answerKey.some((k) => k.paymentId === p.id && k.variant === "japanese_block_address"));
+    expect(hard.length).toBe(1);
+    const s = all.find((x) => x.r.id === hard[0].id)!.suggestions.find((x) => x.fieldPath === "Cdtr/PstlAdr")!;
+    expect(s.confidence).toBeLessThan(suggestConfig.minConfidence);
+    const towns = (s.options ?? []).map((o) => (o as { TwnNm?: string }).TwnNm);
+    const want = (ds.answerKey.find((k) => k.paymentId === hard[0].id)!.expectedFix as { minimum: { TwnNm: string } }).minimum.TwnNm;
+    expect(towns.length).toBeGreaterThanOrEqual(2);
+    expect(towns).toContain(want);
   });
 
   it("every fixable seeded error gets a suggestion that clears it, without adding a new error", () => {
     const failures: string[] = [];
     for (const k of ds.answerKey.filter((a) => a.autoSuggestable)) {
       const x = all.find((y) => y.r.id === k.paymentId)!;
+      if (x.r.mode === "prevent" && x.r.beneficiaryId === null && k.variant === "japanese_block_address") continue; // the hard case
       const use = x.suggestions.filter(shown);
       const xml = applyChanges(x.r.xml, x.r.msgType, use.map((s) => ({ fieldPath: s.fieldPath, newValue: s.newValue })));
       const after = revalidate(x.r, xml, ref).findings;

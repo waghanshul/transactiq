@@ -130,7 +130,11 @@ function suggestAddress(field: RepairField, rules: string[], msg: ParsedTransfer
         ? `Town and country moved into their own fields: ${a.evidence.join("; ")}.`
         : `Could not find the town and country with confidence: ${a.doubts.join("; ")}.`,
       checks: a.doubts.length && a.address ? a.doubts.map((d) => `Doubt: ${d}`) : undefined,
-      options: a.alternatives.length ? a.alternatives.map((o) => ({ ...partial, TwnNm: o.town, Ctry: o.country })) : undefined,
+      // Below the threshold the best guess is just one of the options, never preselected.
+      options: (() => {
+        const opts = [...(a.address && a.confidence < 0.9 && a.town && a.country ? [{ town: a.town, country: a.country }] : []), ...a.alternatives];
+        return opts.length ? opts.map((o) => ({ ...partial, TwnNm: o.town, Ctry: o.country })) : undefined;
+      })(),
       resolves: rules,
     };
   }

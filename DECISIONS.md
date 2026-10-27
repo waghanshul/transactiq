@@ -152,3 +152,48 @@ what was and wasn't measured.
 **Held duplicates and amount/currency problems have no repair path.** The tool says
 what to do (confirm with the client, route to the desk) but never releases, cancels or
 edits them.
+
+## Sprint 4
+
+**A deliberate hard case in the data.** The demo script needs a payment where the tool
+says "not sure". With every beneficiary on file, the record check confirmed even the
+ambiguous Japanese addresses. One Japanese block address (PRV-0123) now goes to a
+first-time beneficiary, so there is no record, and its ward (Naka-ku) exists in four
+cities. The tool shows options; tests assert it never shows a confident answer there.
+
+**"First-attempt success", not "STP".** The Insights before/after compares payments
+accepted by the receiving bank first time. Repairs still need a human approval, so calling
+the gain "straight-through processing" would overstate it. The page says so.
+
+**Client notes: Gemini sees anonymised facts only.** Beneficiaries become B1, B2… and the
+client becomes [CLIENT]; names are put back on our side after drafting. Without a key, a
+template writes the same note. Same maker-checker rule as repairs: whoever drafted or edited
+a note can't approve it. Email goes through Resend to your own inbox only, and the note is
+stored in `client_notes` either way.
+
+**Notes cover record problems only.** Duplicates, amount limits and screening hits are not
+something a client fixes in its beneficiary records, so they are left out of the note and
+its counts.
+
+**Product analytics from the audit log.** Vercel Analytics custom events need a paid plan,
+and PostHog needs another account. The five product events (repair_opened,
+suggestion_shown, suggestion_accepted, suggestion_edited, repair_approved) are already in
+`audit_log`, so the Metrics page counts them there. Vercel Analytics is added for page
+views only (enable Web Analytics in the Vercel project).
+
+**Guardrail counters are computed, not asserted.** Wrong repairs approved are checked
+against the answer key after approval; self-approval, unflagged party changes,
+money-field edits and approvals without a checker are counted from repairs, payments and
+the audit log.
+
+**Manual baseline lives in `docs/manual-baseline.csv`.** Time yourself fixing the 20 listed
+errors from the raw XML and fill the minutes column (editable on GitHub); the Metrics page
+reads it. Until then it says "not timed yet" rather than inventing a number.
+
+**No dashboard caching.** Dashboard queries take tens of milliseconds; caching would show
+stale numbers in the middle of a live demo. The cold-start fix is `/api/health`, opened a
+minute before the demo.
+
+**End-to-end test is a script, not a CI job.** `e2e/demo-path.mjs` drives a real browser
+through the demo path against any URL. It isn't in CI because CI has no database, and it
+changes demo data (it approves a repair); run it before a demo, then reset.

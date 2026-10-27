@@ -9,7 +9,7 @@
 import type { PostalAddress } from "@/lib/iso/types";
 import { countryCodeFromName, isCountryCode } from "@/lib/reference/countries";
 import {
-  IN_PIN_PREFIX, IN_STATES, JP_WARD_TOWN, jpTownFromPostcode, TOWNS, US_STATES, type TownEntry,
+  IN_PIN_PREFIX, IN_STATES, JP_AMBIGUOUS_WARDS, JP_WARD_TOWN, jpTownFromPostcode, TOWNS, US_STATES, type TownEntry,
 } from "@/lib/reference/towns";
 import { jaroWinkler } from "@/lib/rules/screening";
 
@@ -245,10 +245,16 @@ export function analyseAddressLines(lines: string[], hint: { town?: string; coun
 
   // Japan and India: town from postcode or ward when the town name is absent.
   const jpPost = posts.find((p) => p.countries[0] === "JP");
+  const wardCities: string[] = [];
   if (!town && jpPost) {
     const fromPost = jpTownFromPostcode(jpPost.value);
     const ward = lines.join(" ").match(/\b([A-Za-z]+-ku)\b/i)?.[1];
     const fromWard = ward ? JP_WARD_TOWN[ward.toLowerCase()] : undefined;
+    const shared = ward ? JP_AMBIGUOUS_WARDS[ward.toLowerCase()] : undefined;
+    if (shared) {
+      wardCities.push(...shared);
+      doubts.push(`${ward} is a ward name in ${shared.join(", ")}`);
+    }
     if (fromPost) {
       townName = fromPost;
       townConf = fromWard === fromPost ? 0.88 : fromWard ? 0.5 : 0.68;
@@ -334,9 +340,10 @@ export function analyseAddressLines(lines: string[], hint: { town?: string; coun
 
   let confidence = Math.min(townConf, countryConf);
   if (rest.length > 2) confidence = Math.min(confidence, 0.5);
-  const alternatives = towns
-    .filter((t) => t.entry.name !== townName)
-    .map((t) => ({ town: t.entry.name, country: t.entry.country }));
+  const alternatives = [
+    ...towns.map((t) => ({ town: t.entry.name, country: t.entry.country })),
+    ...wardCities.map((c) => ({ town: c, country: "JP" })),
+  ].filter((t, i, all) => t.town !== townName && all.findIndex((x) => x.town === t.town) === i);
   return { address, town: townName, country, confidence: round(confidence), evidence, doubts, alternatives };
 }
 

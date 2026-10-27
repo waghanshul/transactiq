@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   // The browser setup page runs SQL migrations, so ship the migration files with it.
   outputFileTracingIncludes: {
     "/setup": ["./drizzle/**/*"],
+    "/metrics": ["./docs/manual-baseline.csv"],
   },
   turbopack: {
     rules: {

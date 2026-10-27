@@ -124,6 +124,15 @@ export const JP_WARD_TOWN: Record<string, string> = {
   "kohoku-ku": "Yokohama", "tsurumi-ku": "Yokohama",
 };
 
+/** Ward names used in more than one of the cities above. */
+export const JP_AMBIGUOUS_WARDS: Record<string, string[]> = {
+  "chuo-ku": ["Tokyo", "Osaka", "Kobe", "Sapporo", "Fukuoka"],
+  "kita-ku": ["Tokyo", "Osaka", "Nagoya", "Kyoto", "Kobe"],
+  "naka-ku": ["Nagoya", "Hamamatsu", "Yokohama", "Hiroshima"],
+  "nishi-ku": ["Yokohama", "Osaka", "Nagoya", "Fukuoka", "Hamamatsu"],
+  "minami-ku": ["Yokohama", "Kyoto", "Fukuoka", "Hiroshima"],
+};
+
 /** US state and territory abbreviations, for "City, ST 12345" lines. */
 export const US_STATES = new Set([
   "AL", "AK", "AZ", "AR", "CA", "CO", "CT", "DE", "DC", "FL", "GA", "HI", "ID", "IL", "IN", "IA", "KS", "KY", "LA",

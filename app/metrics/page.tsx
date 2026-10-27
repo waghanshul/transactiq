@@ -3,6 +3,7 @@ import { connection } from "next/server";
 import { Suspense } from "react";
 import { BucketBadge } from "@/components/bucket-badge";
 import { geminiScore, rulesScore } from "@/lib/data/benchmark";
+import { finalMetrics } from "@/lib/data/final-metrics";
 import { currentMetrics, repairMetrics } from "@/lib/data/metrics";
 import { getDb } from "@/lib/db/client";
 import { suggestConfig } from "@/lib/suggest/config";
@@ -14,7 +15,9 @@ export default function MetricsPage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-bold tracking-tight">Metrics</h1>
+        <h1 className="flex flex-wrap items-baseline gap-3 text-2xl font-bold tracking-tight">
+          Metrics <span className="rounded border border-review px-2 py-0.5 text-xs font-semibold text-review">Synthetic data</span>
+        </h1>
         <p className="mt-1 max-w-2xl text-sm text-muted">
           Every error in the synthetic data was seeded on purpose and recorded in an answer key. This page scores the
           checks against it. The rules never see the answer key; it is only read here, after they run.
@@ -108,6 +111,9 @@ async function Scores() {
 
       <Suspense fallback={<p className="text-sm text-muted">Scoring the suggestions…</p>}>
         <SuggestionScores />
+      </Suspense>
+      <Suspense fallback={<p className="text-sm text-muted">Reading the audit trail…</p>}>
+        <WorkflowScores />
       </Suspense>
     </>
   );
@@ -203,6 +209,72 @@ async function SuggestionScores() {
           <div className="mt-3"><RunGeminiButton label={gemini.ran ? "Run Gemini again" : `Ask Gemini about the ${rules.unsure} unsure addresses`} /></div>
         )}
       </section>
+    </>
+  );
+}
+
+const mins = (n?: number) => (n === undefined ? "–" : n < 1 ? `${Math.max(1, Math.round(n * 60))} s` : `${n.toFixed(1)} min`);
+
+async function WorkflowScores() {
+  const f = await finalMetrics(getDb());
+  const b = f.time.baseline;
+  return (
+    <>
+      <section className="border-t border-rule pt-6">
+        <h2 className="text-lg font-bold">Repair work</h2>
+        <div className="mt-3 grid gap-3 sm:grid-cols-3">
+          <Score
+            value={f.acceptance.rate === undefined ? "–" : `${Math.round(f.acceptance.rate * 100)}%`}
+            label="Suggestions accepted as shown"
+            detail={`${f.acceptance.accepted} accepted, ${f.acceptance.edited} edited, ${f.acceptance.dismissed} dismissed; ${f.acceptance.manual} values typed by hand`}
+          />
+          <Score
+            value={mins(f.time.makerMedian)}
+            label="Median time to repair (maker)"
+            detail={`From opening the payment to submitting, over ${f.time.repairs} ${f.time.repairs === 1 ? "repair" : "repairs"}. Approval included: ${mins(f.time.endToEndMedian)}.`}
+          />
+          <Score
+            value={b.median === undefined ? "Not timed yet" : mins(b.median)}
+            label="Manual baseline, same errors by hand"
+            detail={b.median === undefined
+              ? "Time yourself fixing the 20 errors in docs/manual-baseline.csv (edit it on GitHub) to get the before number."
+              : `Median of ${b.timed} errors fixed by hand from the raw XML.`}
+          />
+        </div>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-bold">Guardrails</h2>
+        <p className="mt-1 text-sm text-muted">Each of these must stay at zero. They are counted from the data, not assumed.</p>
+        <ul className="mt-3 grid max-w-3xl gap-x-6 sm:grid-cols-2">
+          {f.guardrails.map((g) => (
+            <li key={g.label} className="flex items-baseline justify-between gap-3 border-b border-rule py-2 text-sm">
+              <span>{g.label}{g.n > 0 && g.detail ? <span className="block text-xs text-rejected">{g.detail}</span> : null}</span>
+              <span className={`font-bold tabular-nums ${g.n === 0 ? "text-clean" : "text-rejected"}`}>{g.n}</span>
+            </li>
+          ))}
+        </ul>
+      </section>
+
+      <section>
+        <h2 className="text-lg font-bold">How the tool is used</h2>
+        <p className="mt-1 text-sm text-muted">Product events, counted from the audit trail.</p>
+        <ol className="mt-3 flex max-w-3xl flex-col gap-1.5">
+          {f.funnel.map((e) => (
+            <li key={e.event} className="grid grid-cols-[1fr_auto] items-center gap-x-4 sm:grid-cols-[18rem_1fr_auto]">
+              <span className="text-sm">{e.label} <span className="font-mono text-xs text-muted">{e.event}</span></span>
+              <span className="col-span-2 row-start-2 block h-2 rounded-full bg-accent-soft sm:col-span-1 sm:row-start-auto" aria-hidden>
+                <span className="block h-2 rounded-full bg-accent" style={{ width: `${f.funnel[0].n ? Math.min(100, (e.n / f.funnel[0].n) * 100) : 0}%` }} />
+              </span>
+              <span className="text-sm tabular-nums">{e.n}</span>
+            </li>
+          ))}
+        </ol>
+      </section>
+
+      <p className="text-sm text-muted">
+        What would this be worth? <Link href="/business-case" className="font-semibold text-accent underline-offset-4 hover:underline">Plug in your own numbers</Link>.
+      </p>
     </>
   );
 }

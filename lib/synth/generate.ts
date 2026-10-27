@@ -487,5 +487,17 @@ export function generateDataset(opts: { seed?: number; baseDate?: Date } = {}): 
     }
   }
 
+  // Demo hard case: one Japanese block address goes to a first-time beneficiary,
+  // so there is no bank record to confirm the town. Picked where the ward name
+  // exists in more than one city, so the tool must offer options, not one answer.
+  const hard = payments.find((p) => p.mode === "prevent"
+    && answerKey.some((k) => k.paymentId === p.id && k.variant === "japanese_block_address")
+    && /\b(Naka|Chuo|Kita|Nishi)-ku\b/.test(p.transfer.creditor.address?.AdrLine?.join(" ") ?? ""));
+  if (hard) {
+    hard.beneficiaryId = null;
+    const k = answerKey.find((a) => a.paymentId === hard.id)!;
+    k.description += " First payment to this beneficiary: no record on file to confirm the town.";
+  }
+
   return { baseDate, clients, beneficiaries, payments, answerKey };
 }

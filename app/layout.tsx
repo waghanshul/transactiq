@@ -8,6 +8,7 @@ import "@fontsource/atkinson-hyperlegible-mono/400.css";
 import "./globals.css";
 import { CutoffClock } from "@/components/cutoff-clock";
 import { UserBadge } from "@/components/user-badge";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata: Metadata = {
   title: "TransactIQ – payment repair POC",
@@ -17,8 +18,9 @@ export const metadata: Metadata = {
 const NAV = [
   { href: "/payments", label: "Payments", ready: true },
   { href: "/queue", label: "Queue", ready: true },
-  { href: "#", label: "Insights", ready: false },
+  { href: "/insights", label: "Insights", ready: true },
   { href: "/metrics", label: "Metrics", ready: true },
+  { href: "/about", label: "About", ready: true },
 ];
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
@@ -57,6 +59,11 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           </div>
         </header>
         <main className="mx-auto max-w-7xl px-4 py-6 sm:px-6">{children}</main>
+        <footer className="mx-auto max-w-7xl border-t border-rule px-4 py-4 text-xs text-muted sm:px-6">
+          Proof of concept on synthetic data; not for production use. Town checks: © OpenStreetMap contributors (ODbL), via Nominatim.{" "}
+          <Link href="/about" className="underline underline-offset-2">How it works and its controls</Link>.
+        </footer>
+        <Analytics />
       </body>
     </html>
   );

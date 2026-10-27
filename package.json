@@ -18,13 +18,15 @@
     "baseline:sheet": "tsx scripts/baseline-sheet.ts",
     "import:gleif": "tsx scripts/import-gleif.ts",
     "import:sdn": "tsx scripts/import-sdn.ts",
-    "rules:catalogue": "tsx scripts/rule-catalogue.ts"
+    "rules:catalogue": "tsx scripts/rule-catalogue.ts",
+    "e2e": "node e2e/demo-path.mjs"
   },
   "dependencies": {
     "@ai-sdk/google": "4.0.93",
     "@fontsource/atkinson-hyperlegible-mono": "^5.3.0",
     "@fontsource/atkinson-hyperlegible-next": "^5.3.0",
     "@neondatabase/serverless": "^1.2.0",
+    "@vercel/analytics": "2.0.1",
     "ai": "7.0.137",
     "drizzle-orm": "^0.45.4",
     "fast-xml-parser": "^5.11.2",

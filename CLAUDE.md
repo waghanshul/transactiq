@@ -35,6 +35,9 @@ Vercel Hobby. Fonts are self-hosted from @fontsource (no Google Fonts at runtime
 - `lib/repair/workflow.ts`: maker-checker state machine. Every function checks the role,
   the status and the guardrails, and writes to `audit_log`. `lib/iso/edit.ts` edits XML in place.
 - `lib/auth.ts`: demo users and signed session cookie; the role comes from `user_roles`.
+- `lib/notes/`: client feedback note (anonymised Gemini draft or template) and its maker-checker flow.
+- `lib/data/insights.ts`, `final-metrics.ts`, `benchmark.ts`: dashboards; never used by rules.
+- `e2e/demo-path.mjs`: Playwright walk of the demo (`BASE_URL=... npm run e2e`); `docs/demo-script.md`.
 - API routes stay thin; logic lives in `lib/`.
 
 ## Guardrails (never break these)
