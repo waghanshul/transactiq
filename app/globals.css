@@ -1,26 +1,74 @@
 @import "tailwindcss";
 
+/* Repair Desk tokens: a cool ledger slate with one teal-ink accent.
+   Status colours carry meaning (rejected, needs review, compliance, clean)
+   and are never used as decoration. */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #eef2f1;
+  --surface: #ffffff;
+  --ink: #15212b;
+  --muted: #56666f;
+  --rule: #d3dbda;
+  --accent: #00636b;
+  --accent-soft: #dbecec;
+  --rejected: #b3261e;
+  --review: #9a5800;
+  --compliance: #6a3da8;
+  --clean: #2e7d4f;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --paper: #0f1719;
+    --surface: #162125;
+    --ink: #e4ecea;
+    --muted: #9aaaa9;
+    --rule: #2a383c;
+    --accent: #5cc3c9;
+    --accent-soft: #19363a;
+    --rejected: #f2857c;
+    --review: #e6a94a;
+    --compliance: #b79af0;
+    --clean: #7bcf9b;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-rule: var(--rule);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-rejected: var(--rejected);
+  --color-review: var(--review);
+  --color-compliance: var(--compliance);
+  --color-clean: var(--clean);
+  --font-sans: "Atkinson Hyperlegible Next", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "Atkinson Hyperlegible Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+html {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "tnum" 1;
+  -webkit-font-smoothing: antialiased;
+}
+
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 3px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .drawer-in {
+    animation: drawer-in 180ms ease-out;
+  }
+  @keyframes drawer-in {
+    from { transform: translateX(16px); opacity: 0; }
+    to { transform: none; opacity: 1; }
+  }
 }
