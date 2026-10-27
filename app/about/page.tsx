@@ -110,13 +110,12 @@ function Diagram() {
       <Box x={20} y={60} w={170} h={200} title="People" lines={["Maker: repairs", "Checker: approves", "Viewer: reads", "", "Demo sign-in;", "role from database"]} />
 
       <rect x={240} y={20} width={470} height={330} rx={12} className="fill-paper stroke-rule" strokeWidth={1.5} strokeDasharray="6 4" />
-      <text x={475} y={44} textAnchor="middle" className="fill-muted text-[12px] font-semibold">TransactIQ on Vercel (Next.js)</text>
+      <text x={475} y={44} textAnchor="middle" className="fill-muted text-[12px] font-semibold">TransactIQ on Vercel (Next.js): rules decide, AI only suggests, people approve</text>
       <Box x={260} y={56} w={430} h={58} title="Pages" lines={["Queue · Repair workbench · Insights · Metrics"]} />
       <Box x={260} y={130} w={430} h={58} title="Server actions" lines={["role check · guardrails · audit on every change"]} strong />
       <Box x={260} y={206} w={135} h={84} title="Rule engine" lines={["22 rules, pure", "no AI"]} />
       <Box x={407} y={206} w={135} h={84} title="Suggestions" lines={["rules, records,", "history; AI fallback"]} />
       <Box x={555} y={206} w={135} h={84} title="Repair workflow" lines={["maker-checker,", "re-validation"]} />
-      <text x={475} y={322} textAnchor="middle" className="fill-ink text-[12px]">Rules decide · AI only suggests · people approve</text>
 
       <Box x={770} y={60} w={170} h={230} title="Neon Postgres" lines={["payments, XML", "findings", "suggestions", "repairs", "audit log", "answer key", "(metrics only)"]} />
 
@@ -127,8 +126,8 @@ function Diagram() {
       <Arrow d="M190 160 L256 85" />
       <Arrow d="M475 114 L475 126" />
       <Arrow d="M475 188 L475 202" />
-      <Arrow d="M690 160 L766 160" label="reads and writes" lx={728} ly={150} />
-      <Arrow d="M450 290 L320 386" dashed label="town, country" lx={355} ly={345} />
+      <Arrow d="M690 160 L766 160" label="read/write" lx={728} ly={150} />
+      <Arrow d="M450 290 L320 386" dashed label="town, country" lx={318} ly={352} />
       <Arrow d="M475 290 L480 386" dashed label="address lines or" lx={530} ly={358} />
       <text x={530} y={372} textAnchor="middle" className="fill-muted text-[11px]">anonymised facts</text>
       <Arrow d="M622 290 L640 386" dashed label="approved note" lx={672} ly={345} />
