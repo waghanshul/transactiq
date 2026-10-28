@@ -50,7 +50,7 @@ operations analyst reads XML, guesses the fix and resubmits. TransactIQ targets 
 | --- | --- |
 | Seeded errors caught before sending | 93 of 93, no clean payment flagged |
 | Rejects explained correctly | 40 of 40 |
-| Address suggestions right, when shown | 59 of 59 (target 95%) |
+| Address suggestions right, when shown | 58 of 58 (target 95%); the one hard case shows options instead |
 | Other suggestions right (BIC, purpose, name, date, reference) | 42 of 42 |
 | 150 messier test addresses, rules only | 126 shown, all right; 24 "not sure" |
 | Guardrails (wrong repairs approved, self-approval, money-field edits, auto-release, unflagged party changes) | 0 |
