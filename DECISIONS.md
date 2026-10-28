@@ -197,3 +197,9 @@ minute before the demo.
 **End-to-end test is a script, not a CI job.** `e2e/demo-path.mjs` drives a real browser
 through the demo path against any URL. It isn't in CI because CI has no database, and it
 changes demo data (it approves a repair); run it before a demo, then reset.
+
+**OpenStreetMap confirms, it doesn't decide (fix found on the live site).** A town existing
+in OpenStreetMap says nothing about which of several candidate towns is right. The +2
+point boost from the cross-check pushed the deliberate hard case (68%) over the 70%
+threshold in production, where Nominatim is reachable. The boost now applies only to
+suggestions already at or above the threshold; `tests/enhance.test.ts` covers it.

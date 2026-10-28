@@ -51,7 +51,9 @@ export async function enhanceSuggestion(s: Suggestion, cache: Cache, db?: DB): P
   if (v.TwnNm && v.Ctry) {
     const c = await checkTown(v.TwnNm, v.Ctry, cache, db);
     if (c.status === "found") {
-      out.confidence = round(Math.min(0.99, out.confidence + 0.02));
+      // A town existing doesn't settle WHICH town it is, so the check can firm up a
+      // suggestion that is already shown but never lift an unsure one over the threshold.
+      if (out.confidence >= suggestConfig.minConfidence) out.confidence = round(Math.min(0.99, out.confidence + 0.02));
       out.checks.push(`OpenStreetMap confirms ${v.TwnNm} is a place in ${v.Ctry}. ${OSM_ATTRIBUTION}.`);
     } else if (c.status === "not_found") {
       out.confidence = round(out.confidence * 0.7);
